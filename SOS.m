@@ -15,9 +15,9 @@ eq_u = [ 0.0; 0.0 ];
 f_original = [ u(1) * cos(x(3)) ; u(1) * sin(x(3)) ; u(2)];
 
 % tolerance 
-epsilon = 0.0001;
+epsilon = 0.001;
 % initial value of rho
-rho = 0.1;
+rho = 0.0001;
 
 Q = [  10    0    0   ;
        0    10    0   ;
@@ -34,10 +34,6 @@ S
 
 cg = cos(mypi/4.0);
 sg = sin(mypi/4.0);
-
-% f_hat = [ a*cg*k(1, 1) + b*cg*k(1, 2) - (a*c*sg*k(1, 1) + b*c*sg*k(1, 2));
-%           a*sg*k(1, 1) + b*sg*k(1, 2) + (a*c*cg*k(1, 1) + b*c*cg*k(1, 2));
-%           a*k(2, 1)    + b*k(2, 2)    + c*k(2, 3)];
 
 % define f_hat
 
@@ -75,14 +71,10 @@ Program1 = sosprogram(x_);
 [Program1, h] = sossosvar(Program1, x_);
 
 % add inequality constraint
-Program1 = sosineq(Program1, -dJ - h*(rho - J) - nor22);
+Program1 = sosineq(Program1, (-dJ - h*(rho - J) - nor22) );
 
-% set solver option
-option.solver = 'sdpt3';
-option.params.vers = 2;
-option.params.gaptol = 1e-7;
-
-Program1 = sossolve(Program1, option);
+% call solver
+Program1 = sossolve(Program1);
 
 
 

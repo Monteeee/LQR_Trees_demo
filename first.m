@@ -8,7 +8,7 @@ Q = [  10    0    0   ;
        0    10    0   ;
        0    0    5   ];
 R = [  0.1    0   ;
-       0    10   ];
+       0    1   ];
 
 % A = zeros(3);
 % sq2 = sqrt(2);
@@ -24,7 +24,10 @@ x = sym('x', [3 1]);
 u = sym('u', [2 1]);
 
 f_original = [ u(1) * cos(x(3)) ; u(1) * sin(x(3)) ; u(2)];
+
 eq_x = [12.5; 12.5; my_pi/4.0 ];
+
+robotCurrentPose = [[10.5 9.8] my_pi/4.0 + 0.2 ];
 
 % f_original = [ - u(1) * cos(x(2)) ; -u(1) * sin(x(2)) / x(1) + u(2) ; u(1) * sin(x(2)) / x(1) ];
 % eq_x = [0; 0; 0];
@@ -44,8 +47,6 @@ S
 
 % --------- run simulator -----------
 
-robotCurrentPose = [[10.0 10.0] my_pi/4.0 + 0.3 ];
-
 robotRadius = 0.4;
 robot = ExampleHelperRobotSimulator('emptyMap',2);
 robot.enableLaser(false);
@@ -54,8 +55,8 @@ robot.showTrajectory(true);
 robot.setRobotPose(robotCurrentPose);
 
 controlRate = robotics.Rate(5);
-robotGoal = [12.5 12.5];
-angleGoal = my_pi/3.0;
+robotGoal = [eq_x(1) eq_x(2)];
+angleGoal = eq_x(3);
 
 distanceToGoal = norm(robotCurrentPose(1:2) - robotGoal);
 
