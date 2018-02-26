@@ -4,8 +4,8 @@ my_pi = 3.14159265358;
 
 % -------- LQR design ---------
 
-Q = [  10    0    0   ;
-       0    10    0   ;
+Q = [  10    1    1   ;
+       0    10    1   ;
        0    0    5   ];
 R = [  0.1    0   ;
        0    1   ];
@@ -25,9 +25,9 @@ u = sym('u', [2 1]);
 
 f_original = [ u(1) * cos(x(3)) ; u(1) * sin(x(3)) ; u(2)];
 
-eq_x = [12.5; 12.5; my_pi/4.0 ];
+eq_x = [12.5; 12.5; my_pi/3.0 ];
 
-robotCurrentPose = [[10.5 9.8] my_pi/4.0 + 0.2 ];
+robotCurrentPose = [[8.3 9.0] my_pi/3.0 + 0.5 ];
 
 % f_original = [ - u(1) * cos(x(2)) ; -u(1) * sin(x(2)) / x(1) + u(2) ; u(1) * sin(x(2)) / x(1) ];
 % eq_x = [0; 0; 0];

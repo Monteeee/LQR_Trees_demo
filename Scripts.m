@@ -1,13 +1,14 @@
+%% basic setting of problem
 A = zeros(3);
 sq2 = sqrt(2);
 B = [sq2 0; sq2 0; 0 1];
-Q = [  10    0    0   ;
-       0    10    0   ;
-       0    0    5   ];
-R = [  3    0   ;
-       0    5   ];
-
-[K,S,e] = lqr(A,B,Q,R);
+Q = [  10    0    0   0   0;
+       0    10    0   0   0;
+       0     0    10   0   0;
+       0     0    0   10   0;
+       0     0    0   0   10];
+R = [  10    0   ;
+       0    10   ];
 
 % disp(K);
 % disp(S);
@@ -15,17 +16,27 @@ R = [  3    0   ;
 
 mypi = 3.14159265358;
 
-x = sym('x', [3 1]);
+x = sym('x', [5 1]);
 u = sym('u', [2 1]);
 
-f_original = [ u(1) * cos(x(3)) ; u(1) * sin(x(3)) ; u(2)];
+r = 0.1;
+l = 0.3;
+I = 1.0;
 
-eq_x = [12.5; 12.5; mypi/4.0 ];
+f_original = [ r/2.0 * (x(4) + x(5)) * cos(x(3)) ; 
+               r/2.0 * (x(4) + x(5)) * sin(x(3)) ;
+               r/l * (x(4) - x(5));
+               u(1)/I;
+               u(2)/I];
+
+eq_x = [12.5; 12.5; mypi/4.0; 0; 0 ];
 eq_u = [ 0.0; 0.0 ];
 
+%% linearization and more
 [A_l, B_l] = sym_linearization(f_original, x, u, eq_x, eq_u);
 
-%B_l
+A_l
+B_l
 
 [K_new, S_new, ~] = lqr(A_l, B_l, Q, R);
 

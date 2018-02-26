@@ -57,7 +57,7 @@ for i=1:100
     l = l + dl.*dt;
 end
 
-% plot([1:100], recordl)
+plot([1:100], recordl)
 
 %% SOS verification
 

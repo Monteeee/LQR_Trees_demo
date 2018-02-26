@@ -20,9 +20,14 @@ end
 
 A = subs(A, x, eq_x);
 A = subs(A, u, eq_u);
-A = double(A);
+
 B = subs(B, x, eq_x);
 B = subs(B, u, eq_u);
-B = double(B);
+
+if isa(eq_x(1), 'double') && isa(eq_u(1), 'double')
+    A = double(A);
+    B = double(B);
+end
+
 end
 

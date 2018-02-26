@@ -1,5 +1,6 @@
-function [fcl_t] = symbolic_Taylor(fcl, x, xg)
-%% provide 2nd order taylor expansion
+function [fcl_t] = symbolic_Taylor(fcl, x, xg, order)
+%% *expired, use built-in function taylor instead. This function provides 2nd order taylor expansion
+
 
 Nx = length(x);
 
