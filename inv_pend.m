@@ -5,9 +5,9 @@ mypi = 3.14159265358;
 % tolerance (slack variable to transfer negativity to non-positivity)
 epsilon = 1e-7;
 % initial value of rho
-rho = 100.0;
+rho = 10.0;
 
-verbose = 3;
+verbose = 4;
 
 Q = [  10   0   ;
        0    1   ];
@@ -96,7 +96,7 @@ if verbose == 1 || verbose == 2
 end
 %% verification of the basin of attraction of TI LQR
 
-if verbose == 3
+if verbose == 3 || verbose == 4
 
     % define f_hat
 
@@ -106,7 +106,7 @@ if verbose == 3
     f_cl
 
     % taylor expansion
-    f_cl_t = taylor(f_cl, x.', eq_x.', 'order', 3);
+    f_cl_t = taylor(f_cl, x.', eq_x.', 'order', 4);
 
     temp = vpa(f_cl_t, 5)
 
@@ -151,3 +151,36 @@ if verbose == 3
 
     disp(SOLV)
 end
+
+%% plot out current region of attraction of this controller
+
+
+if verbose == 4
+
+    ttt = vpa(simplify(J), 5);
+
+    x1gv = linspace(-mypi, mypi, 1000); % grid vector for theta
+    x2gv = linspace(-4*mypi, 4*mypi, 1000); % grid vector for d(theta)/dt
+
+    [vx, vy] = meshgrid(x1gv, x2gv);
+
+    % tt = subs(subs(J__, x_(1), vx), x_(3), vy);
+
+    % f_(x_) = ttt;
+    % tt = double(f_(x1gv, x2gv));
+    
+    tt = 174.14*vx.^2 + 74.007*vx.*vy + 8.019*vy.^2;
+
+    condition1 = tt <= rho;
+    condition2 = tt >= 0;
+    output = ones(length(x1gv), length(x2gv)); % Initialize to 1
+    output(~(condition1&condition2)) = 0; % Zero out coordinates not meeting conditions.
+    imshow(output, 'xdata', x1gv, 'ydata', x2gv); % Display
+    axis on;
+    
+    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % ------   --------
+    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+end
+

@@ -6,9 +6,9 @@ mypi = 3.14159265358;
 % tolerance (slack variable to transfer negativity to non-positivity)
 epsilon = 1e-10;
 % initial value of rho
-rho = 0.43;
+rho = 5.5;
 
-verbose = 4;
+verbose = 3;
 
 Q = [  5    0    0    0;
        0    5    0    0;
@@ -66,7 +66,7 @@ if verbose == 1 || verbose == 2
     F = 0;
     dt = 1.0/1000;
 
-    iter = 100;
+    iter = 10000;
     record1 = zeros(iter, 1);
     record2 = zeros(iter, 1);
     recordu = zeros(iter, 1);
@@ -136,13 +136,11 @@ if verbose == 3 || verbose == 4
         f_cl_t(i) = dot(C, T);
     end
 
-    f_hat = vpa(f_cl_t, 5);
-
-    f_hat;
+    f_hat = vpa(simplify(f_cl_t), 5);
 
     % define dJ*_hat(x_)
     dJ = 2 .* (x_.') * S * f_hat;
-    dJ__ = vpa(dJ, 5);
+    dJ__ = vpa(simplify(dJ), 5)
     
     % define J*(x_)
     J = (x_.') * S * x_;
@@ -155,8 +153,21 @@ if verbose == 3 || verbose == 4
     Program1 = sosprogram(x_);
 
     % define h(x_) as sums of squares
-    [Program1, h] = sossosvar(Program1, x_);
-
+    tic
+    m_test = MinCoverSOS(dJ, 2, x_);
+    
+    % [Program1, h] = sossosvar(Program1, monomials(x_, [1 2]));
+    [Program1, h] = sossosvar(Program1, m_test);
+    
+    [coeff_dJ, terms_dJ] = coeffs(dJ);
+    [coeff_h, terms_h] = coeffs(h, x_);
+    
+    if length(coeff_h) < length(coeff_dJ)
+        error("not enough order for h!");
+    elseif ( ~ all(ismember(terms_dJ, terms_h)) )
+        error("enough number but the not all terms match!");
+    end
+    
     % add inequality constraint
     Program1 = sosineq(Program1, -dJ - h*(rho - J) - nor22);
 
@@ -165,7 +176,8 @@ if verbose == 3 || verbose == 4
     Program1 = sossolve(Program1);
 
     SOLV = sosgetsol(Program1, h);
-
+    toc
+    
     disp(SOLV)
 end
 
@@ -182,7 +194,7 @@ if verbose == 4
 
     ttt = vpa(simplify(J__), 5);
 
-    x1gv = linspace(-0.3, 0.3, 1000); % grid vector for position
+    x1gv = linspace(-1.0, 1.0, 1000); % grid vector for position
     x3gv = linspace(-mypi/8.0, mypi/8.0, 1000); 
 
     [vx, vy] = meshgrid(x1gv, x3gv);

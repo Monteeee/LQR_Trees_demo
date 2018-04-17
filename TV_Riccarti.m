@@ -17,16 +17,13 @@ load('opti_traj.mat', 'soln', 'A_t', 'B_t', 'x_t', 'u_t', 'Q', 'R');
 
 fprintf("time: %d\n", t);
 
-tic
 z_data = soln.interp.state(t);
 x_data = z_data(1, :);
 dx_data = z_data(2, :);
 y_data = z_data(3, :);
 dy_data = z_data(4, :);
 u_data = soln.interp.control(t);
-toc
 
-tic
 S = reshape(S, size(A_t)); %Convert from "n^2"-by-1 to "n"-by-"n"
 
 % this will do the substitution much faster when x_data is vector
@@ -39,9 +36,6 @@ S = reshape(S, size(A_t)); %Convert from "n^2"-by-1 to "n"-by-"n"
 val_A = double(subs(A_t, [x_t;u_t], [x_data;dx_data;y_data;dy_data;u_data]));
 val_B = double(subs(B_t, [x_t;u_t], [x_data;dx_data;y_data;dy_data;u_data]));
 
-toc
-
-tic
 % B_trans = val_B.';
 % A_trans = val_A.';
 
@@ -63,7 +57,6 @@ dSdt = - (Q - S * ( 0.1 .* val_B * val_B.') * S + S*val_A + val_A.' * S);
 % temp6 = cell_add(cell_add(temp5, temp2), temp3);
 % 
 % temp7 = cell_sub(Q_t, temp6);
-toc
 
 % if isa(temp7, 'double')
 %     dSdt = -1 .* temp7;
