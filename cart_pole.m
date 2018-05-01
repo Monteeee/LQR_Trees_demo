@@ -8,7 +8,7 @@ epsilon = 1e-10;
 % initial value of rho
 rho = 5.5;
 
-verbose = 3;
+verbose = 5;
 
 Q = [  5    0    0    0;
        0    5    0    0;
@@ -222,7 +222,7 @@ end
 if verbose == 5
 
     % in real case this will be the sampled point
-    startPoint = [d - 0.2; 0.0; mypi - 0.1; 0.0]; % [x, dx/dt, theta, dtheta/dt]
+    startPoint = [d - 0.5; 0.0; mypi - 0.3; 0.0]; % [x, dx/dt, theta, dtheta/dt]
 
     % assum we have already got some point in the tree
     tree_point = [d,        0.0, mypi,        0.0;
@@ -303,7 +303,7 @@ if verbose == 5
     y_data = z_data(3,:);
     u_data = soln.interp.control(t);
     
-    plot(x_data,'DisplayName','x_data');hold on;plot(y_data,'DisplayName','y_data');hold off;
+    plot(x_data,'DisplayName','x-data');hold on;plot(y_data,'DisplayName','y-data');hold off;
     
     
 end
@@ -311,6 +311,7 @@ end
 
 %% to solve the matrix ODE for S(t)
 
+if verbose == 5
 x_t = sym('x0_', [Nx, 1]);
 u_t = sym('u0_', [Nu, 1]);
 
@@ -318,10 +319,11 @@ u_t = sym('u0_', [Nu, 1]);
 
 % save the data so that in Riccarti function I can use them without reading
 % them in every function call
-% save('opti_traj.mat', 'soln', 'A_t', 'B_t', 'x_t', 'u_t', 'Q', 'R');
+save('opti_traj_1.mat', 'soln', 'A_t', 'B_t', 'x_t', 'u_t', 'Q', 'R', 'S');
 
-disp("done!");
+disp("saved!");
 
+end
 
 %% the end
 disp("done!");

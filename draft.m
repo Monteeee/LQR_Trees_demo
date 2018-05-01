@@ -66,6 +66,7 @@ for i=1:length(t_temp)
     K_t(i, :) = 0.1 .* (B_mat(i, :) * reshape(X(i, :), [4 4]));
 end
 
+%% preparation work for LTV verification
 % get dS/dx = -Q + S*B*inv(R)*trans(B)*S + S*A + trans(A)*S
 dSdt = zeros(Ns, Ns, length(t_temp));
 for i=1:length(t_temp)
@@ -73,12 +74,10 @@ for i=1:length(t_temp)
     dSdt(:,:,i) = -Q + Stemp * B_mat(i, :).' * 0.1 * B_mat(i, :) * Stemp + ...
                     Stemp * A_mat(:, :, i) + A_mat(:, :, i).' * Stemp;
 end
-%% preparation work for LTV verification
 
 d1 = sqrt(size(X, 2));
 d2 = d1;
 % use cubic spline to interpolate the S matrix elements
-
 
 % Xt = cell(d1, 1);
 % 
@@ -234,8 +233,9 @@ for k = 1:size(f_coeff_all, 1) % 4
         ft_spline{i, k} = item;
     end
 end
-%% get dJ_hat using all kinds of splines
-dJ_hat_t = sym(zeros(length(T)-1, 1));
+
+%% get dJ_hat using all kinds of splines (abandoned due to ridiculous complexity)
+dJ_hat_t2 = sym(zeros(length(T)-1, 1));
 for tk = 1:length(T)-1
     for i = 1:d1
         for j = 1:d2
@@ -245,9 +245,56 @@ for tk = 1:length(T)-1
             sst = coeff_St(1)*(t - t1)^3 + coeff_St(2)*(t - t1)^2 + coeff_St(3)*(t - t1) + coeff_St(4);
             dsst = coeff_dSt(1)*(t - t1)^3 + coeff_dSt(2)*(t - t1)^2 + coeff_dSt(3)*(t - t1) + coeff_dSt(4);
             
-            dJ_hat_t(tk) = dJ_hat_t(tk) + ( x_(i) * x_(j) * dsst ) + 2 * x_(i) * sst *  ft_spline{tk, j};
+            dJ_hat_t2(tk) = dJ_hat_t2(tk) + ( x_(i) * x_(j) * dsst ) + 2 * x_(i) * sst *  ft_spline{tk, j};
         end
     end
+end
+
+%% get dJ_hat for each time instant first and then compute spline for it
+
+dJ_hat_t = sym(zeros(length(T), 1));
+
+for tk = 1:length(T)
+   for i = 1:d1
+       for j = 1:d2
+            dJ_hat_t(tk) = dJ_hat_t(tk) + x_(i) * x_(j) * dSdt(i, j, tk) + ...
+                2 * x_(i) * X(tk, j + (i-1)*4) * f_t(j, tk);
+       end
+   end
+   if tk == 1
+        [~, terms_of_dJ] = coeffs(dJ_hat_t(tk), x_);
+   end
+   % following is a check for terms of dJ_hat_t, if all of them are the
+   % same then we can safely do the spline
+%    [coeff_temp, terms] = coeffs(dJ_hat_t(tk), x_);
+%    if tk == 1
+%        last_terms = terms;
+%    elseif ~isequal(last_terms, terms)
+%        disp("not equal terms of dJ!");
+%    end
+end
+
+coeff_dJ = zeros(length(T), length(terms_of_dJ));
+for tk = 1:length(T)
+   [coeff_dJ(tk, :), ~] = coeffs(dJ_hat_t(tk), x_);
+end
+
+sp_dJ = zeros(length(terms_of_dJ), length(T)-1, 4);
+for i = 1:length(terms_of_dJ)
+    pp = spline( T, coeff_dJ(:, i) );
+    sp_dJ(i, :, :) = pp.coefs;
+end
+
+dJ_spline = cell(length(T)-1, 1);
+for i = 1:length(T) - 1 % 96
+    item = sym(0);
+    for j = 1:length(terms_of_dJ)
+        cft = sp_dJ(j, i, :);
+        t1 = T(i);
+        ct = cft(1)*(t - t1)^3 + cft(2)*(t - t1)^2 + cft(3)*(t - t1) + cft(4);
+        item = item + ct * terms_of_dJ(j);
+    end
+    dJ_spline{i} = item;
 end
 
 %% the SOS programming for (39) in Tedrake paper 2010
@@ -256,31 +303,31 @@ beta0k = 0.1;
 rho_k = beta1k * t + beta0k;
 drho_k = beta1k;
 
-dJ_hat_trunc = dJ_hat_t;
+dJ_hat_trunc = dJ_spline;
 
 k = 30;
 T_r = fliplr(T);
 
-[c1, term1] = coeffs(dJ_hat_t(k), [x_;t]);
+[c1, term1] = coeffs(dJ_spline{k}, [x_;t]);
 c1 = double(c1);
 
 % maybe try to do truncatoin here !
 c1_trunc = c1(abs(c1) > 0.01 * mean(abs(c1)));
 term1_trunc = term1(abs(c1) > 0.01 * mean(abs(c1)));
 
-dJ_hat_trunc(k) = c1_trunc * term1_trunc.';
+dJ_hat_trunc{k} = c1_trunc * term1_trunc.';
 
 %% 
 % define a sos program
 Program1 = sosprogram([x_;t]);
 tic
-mz = P_recursive(dJ_hat_trunc(k), [x_;t]);
+mz = P_recursive(dJ_hat_trunc{k}, [x_;t]);
 
 % define h1(x_, t), h2(x_, t), h3(x_, t) as sums of squares
 
 [Program1, h2] = sossosvar(Program1, mz.');
 [Program1, h3] = sossosvar(Program1, mz.');
-toc
+
 % VEC_x = monomials(x_, [1 2 3 4]);
 % VEC_t = monomials(t, [1 2 3 4 5 6]);
 % VEC_ = VEC_x * VEC_t.';
@@ -288,23 +335,26 @@ toc
 
 % disp("adding h1");
 [Program1, h1] = sospolyvar(Program1, term1_trunc.');
-
+toc
 %% constraint
 disp("adding constraint");
-
+tic
 % add inequality constraint
-Program1 = sosineq(Program1, -(dJ_hat_t(k) - beta1k + h1 * (rho_k - J_hat_t(k)) + ...
+Program1 = sosineq(Program1, -(dJ_hat_trunc{k} - beta1k + h1 * (rho_k - J_hat_t(k)) + ...
                              h2 * (t - T_r(k)) + h3 * (T_r(k+1) - t) ));
-
+toc
+tic
 % set solver option
 disp("start solving");
 Program1 = sossolve(Program1);
 
-SOLV = sosgetsol(Program1, h);
-
-disp(SOLV)
-
-
+SOLV1 = sosgetsol(Program1, h1);
+disp(SOLV1)
+SOLV2 = sosgetsol(Program1, h2);
+disp(SOLV2)
+SOLV3 = sosgetsol(Program1, h3);
+disp(SOLV3)
+toc
 
 %% 
 disp("done!");
